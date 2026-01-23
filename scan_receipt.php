@@ -29,7 +29,7 @@ require 'header.php';
                         <div class="mb-4">
                             <label for="receiptImage" class="form-label fw-bold">Choose Image or Take Photo</label>
                             <input type="file" class="form-control" id="receiptImage" name="receipt_image"
-                                accept="image/*" capture="environment" required>
+                                accept="image/*" required>
                         </div>
 
                         <div class="d-grid">
