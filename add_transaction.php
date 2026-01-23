@@ -29,7 +29,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['error'] = "Database Error: " . $e->getMessage();
         }
     }
-    header("Location: index.php");
+
+    $redirect_to = $_POST['redirect_to'] ?? 'index.php';
+    header("Location: " . $redirect_to);
     exit;
 }
 ?>

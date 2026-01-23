@@ -39,8 +39,20 @@ $cat_stmt->execute([$user_id]);
 $current_month_spending = $cat_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
 $budget_alerts = [];
-?>
 
+// --- FETCH CATEGORIES FOR AUTOCOMPLETE ---
+$cat_list_stmt = $pdo->prepare("SELECT name, type FROM categories WHERE user_id = ? ORDER BY name ASC");
+$cat_list_stmt->execute([$user_id]);
+$all_categories = $cat_list_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$categories_by_type = ['income' => [], 'expense' => []];
+foreach ($all_categories as $cat) {
+    $categories_by_type[$cat['type']][] = $cat['name'];
+}
+
+
+
+?>
 <?php include 'header.php'; ?>
 
 <div class="container-fluid">
@@ -78,6 +90,8 @@ $budget_alerts = [];
             </div>
         </div>
     </div>
+
+
 
     <div class="row">
         <!-- Recent Transactions -->
@@ -171,13 +185,23 @@ $budget_alerts = [];
             </div>
             <form action="add_transaction.php" method="POST">
                 <div class="modal-body">
-                    <div class="mb-3"><label class="form-label">Type</label><select name="type" class="form-select"
-                            required>
+                    <div class="mb-3"><label class="form-label">Type</label>
+                        <select name="type" id="transactionType" class="form-select" required
+                            onchange="updateCategoryOptions()">
                             <option value="expense">Expense</option>
                             <option value="income">Income</option>
-                        </select></div>
-                    <div class="mb-3"><label class="form-label">Category</label><input type="text" name="category"
-                            class="form-control" required></div>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-control" list="categoryList" required
+                            autocomplete="off">
+                        <datalist id="categoryList">
+                            <?php foreach ($category_options as $cat_name): ?>
+                                <option value="<?php echo htmlspecialchars($cat_name); ?>">
+                                <?php endforeach; ?>
+                        </datalist>
+                    </div>
                     <div class="mb-3"><label class="form-label">Amount</label><input type="number" step="0.01"
                             name="amount" class="form-control" required></div>
                     <div class="mb-3"><label class="form-label">Date</label><input type="date" name="date"
@@ -217,6 +241,28 @@ $budget_alerts = [];
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const categoriesByType = <?php echo json_encode($categories_by_type); ?>;
+
+    function updateCategoryOptions() {
+        const typeSelect = document.getElementById('transactionType');
+        const list = document.getElementById('categoryList');
+        const selectedType = typeSelect.value;
+
+        list.innerHTML = ''; // Clear existing options
+
+        if (categoriesByType[selectedType]) {
+            categoriesByType[selectedType].forEach(catName => {
+                const option = document.createElement('option');
+                option.value = catName;
+                list.appendChild(option);
+            });
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', updateCategoryOptions);
+</script>
 </div> <!-- End Main Content -->
 </div> <!-- End Flex Wrapper -->
 </body>

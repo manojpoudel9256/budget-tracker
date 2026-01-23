@@ -4,7 +4,7 @@ require 'db_connect.php';
 
 // --- CONFIGURATION ---
 $API_KEY = GEMINI_API_KEY; // Loaded from db_connect.php -> config.php
-$API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $API_KEY;
+$API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $API_KEY;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['receipt_image'])) {
     header("Location: scan_receipt.php?error=No file uploaded");
@@ -76,14 +76,23 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+// Disable SSL verification for local development environments to prevent "SSL certificate problem"
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlError = curl_error($ch);
 curl_close($ch);
 
-if ($httpCode !== 200) {
-    // Log error for debugging (in a real app)
-    header("Location: scan_receipt.php?error=AI Analysis failed. Please try again.");
+if ($httpCode !== 200 || $curlError) {
+    // Show detailed error for debugging
+    echo "<h1>AI Analysis Failed</h1>";
+    echo "<p><strong>HTTP Code:</strong> $httpCode</p>";
+    if ($curlError) {
+        echo "<p><strong>Curl Error:</strong> $curlError</p>";
+    }
+    echo "<p><strong>API Response:</strong> <pre>" . htmlspecialchars($response) . "</pre></p>";
+    echo "<p><a href='scan_receipt.php'>Go Back</a></p>";
     exit;
 }
 
@@ -108,13 +117,30 @@ $stmt = $pdo->prepare("SELECT id FROM categories WHERE user_id = ? AND name = ?"
 $stmt->execute([$userId, $categoryName]);
 $categoryId = $stmt->fetchColumn();
 
-// If category doesn't exist, use 'Other' or create it? 
-// For now, let's fallback to finding 'Other' or just first expense category
+// If category doesn't exist by name, try to find 'Other'
 if (!$categoryId) {
-    // Try to find ANY expense category
-    $stmt = $pdo->prepare("SELECT id FROM categories WHERE user_id = ? AND type = 'expense' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id FROM categories WHERE user_id = ? AND name = 'Other'");
     $stmt->execute([$userId]);
     $categoryId = $stmt->fetchColumn();
+}
+
+// If still no category, CREATE 'Other' category
+if (!$categoryId) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO categories (user_id, name, type) VALUES (?, 'Other', 'expense')");
+        $stmt->execute([$userId]);
+        $categoryId = $pdo->lastInsertId();
+    } catch (PDOException $e) {
+        // Fallback: If creation fails (race condition?), try one last time to get ANY category
+        $stmt = $pdo->prepare("SELECT id FROM categories WHERE user_id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $categoryId = $stmt->fetchColumn();
+
+        if (!$categoryId) {
+            header("Location: scan_receipt.php?error=Error: No categories found and could not create default.");
+            exit;
+        }
+    }
 }
 
 // 8. Insert into Database
