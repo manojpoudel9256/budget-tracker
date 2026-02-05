@@ -121,6 +121,86 @@ foreach ($all_categories as $cat) {
             border-radius: 0 !important;
         }
     }
+
+    /* --- DESKTOP PREMIUM OPTIMIZATIONS (PC View Only) --- */
+    @media (min-width: 769px) {
+        body {
+            background-color: #f0f2f5;
+            /* Slight gray for depth on desktop */
+            padding-bottom: 20px;
+        }
+
+        /* Center Content & Constrain Width */
+        .container-fluid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px !important;
+        }
+
+        /* Desktop Card Styling */
+        .glass-card {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025) !important;
+        }
+
+        /* Header Layout for Desktop */
+        .d-flex.justify-content-between.align-items-end.px-3 {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-bottom: 30px !important;
+        }
+
+        /* AMEX Card Desktop Sizing */
+        .position-relative.overflow-hidden.p-4 {
+            min-height: 280px !important;
+            /* Taller card on desktop */
+            max-width: 100%;
+            margin-bottom: 40px !important;
+        }
+
+        /* Quick Actions Grid for Desktop */
+        .quick-actions-scroll {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            overflow: visible;
+            padding: 0;
+            margin: 0 0 40px 0;
+        }
+
+        .quick-actions-scroll a {
+            min-width: auto;
+            height: 100%;
+            padding: 25px !important;
+            border: 1px solid rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.3s ease;
+        }
+
+        .quick-actions-scroll a:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+            border-color: transparent !important;
+        }
+
+        /* Headings */
+        h5.fw-bold {
+            font-size: 1.5rem;
+            margin-bottom: 25px !important;
+        }
+
+        /* Balance Text Size */
+        .display-6 {
+            font-size: 3rem !important;
+            /* Larger balance on PC */
+        }
+    }
 </style>
 
 <div class="container-fluid px-0 px-md-3">
