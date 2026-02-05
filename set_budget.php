@@ -11,6 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_SESSION['user_id'];
     $category = trim($_POST['category']);
     $amount = $_POST['amount'];
+    $redirect_to = isset($_POST['redirect_to']) ? $_POST['redirect_to'] : 'index.php';
 
     if (empty($category) || empty($amount)) {
         $_SESSION['error'] = "Category and Amount are required.";
@@ -35,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['error'] = "Database Error: " . $e->getMessage();
         }
     }
-    header("Location: index.php");
+    header("Location: " . $redirect_to);
     exit;
 }
 ?>

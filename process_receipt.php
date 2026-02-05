@@ -15,10 +15,40 @@ $file = $_FILES['receipt_image'];
 $userId = $_SESSION['user_id'];
 
 // 1. Validation
-$allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
-if (!in_array($file['type'], $allowedTypes)) {
-    header("Location: scan_receipt.php?error=Invalid file type. JPG, PNG, WEBP only.");
+
+// Check for PHP upload errors
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    $errorMessages = [
+        UPLOAD_ERR_INI_SIZE => "File is too large (server limit). Please try a smaller image.",
+        UPLOAD_ERR_FORM_SIZE => "File is too large (form limit).",
+        UPLOAD_ERR_PARTIAL => "The file was only partially uploaded.",
+        UPLOAD_ERR_NO_FILE => "No file was uploaded.",
+        UPLOAD_ERR_NO_TMP_DIR => "Missing a temporary folder.",
+        UPLOAD_ERR_CANT_WRITE => "Failed to write file to disk.",
+        UPLOAD_ERR_EXTENSION => "A PHP extension stopped the file upload."
+    ];
+    $msg = $errorMessages[$file['error']] ?? "Unknown upload error occurred.";
+    header("Location: scan_receipt.php?error=" . urlencode($msg));
     exit;
+}
+
+// Check file size (custom limit, e.g., 5MB)
+$maxSize = 5 * 1024 * 1024; // 5 MB
+if ($file['size'] > $maxSize) {
+    header("Location: scan_receipt.php?error=File is too large (Max 5MB). Please resize.");
+    exit;
+}
+
+$allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+// Allow application/octet-stream if extension is valid (common issue on some mobile variants)
+$fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+if (!in_array($file['type'], $allowedTypes)) {
+    // Soft check for generic binary types if extension matches
+    $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    if (!in_array($fileExt, $allowedExts)) {
+        header("Location: scan_receipt.php?error=Invalid file type. JPG, PNG, WEBP, HEIC only.");
+        exit;
+    }
 }
 
 // 2. Upload Handling
