@@ -200,6 +200,78 @@ foreach ($all_categories as $cat) {
             font-size: 3rem !important;
             /* Larger balance on PC */
         }
+
+        /* --- MONTHLY BUDGET PREMIUM STYLES --- */
+        .budget-card-desktop {
+            padding: 30px !important;
+            height: 100%;
+        }
+
+        .budget-progress-container {
+            margin-bottom: 25px;
+            padding: 15px;
+            border-radius: 16px;
+            background: #f8f9fa;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s;
+        }
+
+        .budget-progress-container:hover {
+            transform: translateX(5px);
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .budget-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: -0.5px;
+        }
+
+        .budget-values {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .premium-progress {
+            height: 12px !important;
+            background-color: #e2e8f0 !important;
+            border-radius: 10px !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-top: 10px;
+        }
+
+        .premium-progress-bar {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Shimmer effect for progress bars */
+        .premium-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
     }
 </style>
 
@@ -449,37 +521,53 @@ foreach ($all_categories as $cat) {
 
         <!-- Monthly Budgets -->
         <div class="col-lg-5">
-            <div class="glass-card mb-4">
+            <div class="glass-card mb-4 budget-card-desktop">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0 fw-bold">Monthly Budgets</h5>
-                    <a href="set_budget_page.php" class="btn btn-outline-primary btn-sm rounded-pill">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-bullseye text-primary me-2"></i>Monthly Budgets</h5>
+                    <a href="set_budget_page.php" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">
                         <i class="fas fa-plus me-1"></i>Set Goal
                     </a>
                 </div>
                 <div>
                     <?php if (empty($budgets)): ?>
-                        <div class="text-center py-4">
+                        <div class="text-center py-5">
                             <div class="mb-3 text-muted"><i class="fas fa-bullseye fa-3x opacity-25"></i></div>
-                            <p class="text-muted">No budget goals set yet.</p>
+                            <p class="text-muted fw-bold">No budget goals set yet.</p>
+                            <a href="set_budget_page.php" class="btn btn-sm btn-primary rounded-pill mt-2">Get Started</a>
                         </div>
                     <?php else: ?>
                         <?php foreach ($budgets as $b):
                             $cat = $b['category'];
                             $limit = $b['amount'];
                             $spent = $current_month_spending[$cat] ?? 0;
+                            // Avoid division by zero
                             $percent = ($limit > 0) ? ($spent / $limit) * 100 : 0;
-                            $color = $percent < 75 ? 'bg-success' : ($percent < 90 ? 'bg-warning' : 'bg-danger');
+                            
+                            // Gradient Logic
+                            if ($percent < 75) {
+                                $grad = 'linear-gradient(90deg, #10b981 0%, #34d399 100%)'; // Green
+                                $textType = 'text-success';
+                            } elseif ($percent < 90) {
+                                $grad = 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)'; // Orange
+                                $textType = 'text-warning';
+                            } else {
+                                $grad = 'linear-gradient(90deg, #ef4444 0%, #f43f5e 100%)'; // Red
+                                $textType = 'text-danger';
+                            }
                             ?>
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="fw-bold text-dark"><?php echo htmlspecialchars($cat); ?></span>
-                                    <small class="text-muted fw-bold">
+                            <div class="budget-progress-container">
+                                <div class="d-flex justify-content-between align-items-end mb-1">
+                                    <div>
+                                        <div class="budget-label"><?php echo htmlspecialchars($cat); ?></div>
+                                        <small class="text-muted" style="font-size: 0.75rem;"><?php echo number_format($percent, 0); ?>% Used</small>
+                                    </div>
+                                    <div class="budget-values <?php echo $textType; ?>">
                                         <?php echo number_format($spent, 0); ?> / <?php echo number_format($limit, 0); ?>
-                                    </small>
+                                    </div>
                                 </div>
-                                <div class="progress" style="height: 6px; border-radius: 10px; background-color: #f1f3f5;">
-                                    <div class="progress-bar <?php echo $color; ?>" role="progressbar"
-                                        style="width: <?php echo min($percent, 100); ?>%; border-radius: 10px;"></div>
+                                <div class="progress premium-progress">
+                                    <div class="progress-bar premium-progress-bar" role="progressbar"
+                                        style="width: <?php echo min($percent, 100); ?>%; background: <?php echo $grad; ?>;"></div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -629,7 +717,8 @@ foreach ($all_categories as $cat) {
                             </span>
                             <input type="number" step="1" name="amount"
                                 class="form-control form-control-lg rounded-end-3 fw-bold" placeholder="10000" required
-                                style="border: 2px solid #e2e8f0; border-left: 0; font-size: 1.5rem;">
+                                style="border: 2px solid #e2e8f0; border-left: 0; font-size: 1.5rem;"
+                                onfocus="this.placeholder = ''" onblur="this.placeholder = '10000'">
                         </div>
                         <small class="text-muted mt-2 d-block">Set a spending limit for this category</small>
                     </div>

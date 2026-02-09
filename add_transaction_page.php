@@ -100,14 +100,15 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                     <!-- 2. HERO AMOUNT INPUT -->
                     <div class="text-center mb-5 px-4 animate-enter delay-1">
                         <label class="d-block text-muted text-uppercase fw-bold small mb-1 ls-1">Amount</label>
-                        <div class="d-flex align-items-center justify-content-center">
+                        <div class="d-flex align-items-center justify-content-center"
+                            style="max-width: 100%; overflow: hidden;">
                             <span class="display-4 fw-bold text-dark me-1"
                                 id="currencySymbol"><?php echo $_SESSION['currency'] == 'USD' ? '$' : $_SESSION['currency']; ?></span>
-                            <input type="number" step="1" name="amount"
+                            <input type="number" step="1" name="amount" id="amountInput"
                                 class="form-control border-0 bg-transparent text-dark p-0 fw-bold" value="0" required
-                                style="font-size: 4rem; width: 220px; text-align: center; outline: none; box-shadow: none;"
+                                style="font-size: 4rem; width: auto; min-width: 100px; max-width: 80%; text-align: left; outline: none; box-shadow: none;"
                                 onfocus="if(this.value==0){this.value=''}" onblur="if(this.value==''){this.value=0}"
-                                autofocus>
+                                oninput="resizeInput(this)" autofocus>
                         </div>
                     </div>
 
@@ -291,7 +292,25 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
     // Init
     document.addEventListener('DOMContentLoaded', () => {
         selectType('expense'); // Default
+        resizeInput(document.querySelector('input[name="amount"]')); // Init resize
     });
+
+    // Dynamic Font Scaling for Amount Input
+    function resizeInput(el) {
+        const length = el.value.length;
+        let fontSize = 4; // Default rem
+
+        if (length > 5) fontSize = 3;
+        if (length > 7) fontSize = 2.5;
+        if (length > 10) fontSize = 2;
+        if (length > 13) fontSize = 1.5;
+
+        // Apply new font size
+        el.style.fontSize = fontSize + 'rem';
+
+        // Auto-width adjustment (optional, similar to "ch" units)
+        // el.style.width = (length + 1) + 'ch'; 
+    }
 
 </script>
 
