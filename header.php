@@ -3,6 +3,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 $current_page = basename($_SERVER['PHP_SELF']);
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,6 +12,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- PWA / Home Screen Icon -->
+    <link rel="icon" href="apple-touch-icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FinanceApp">
+    <meta name="theme-color" content="#6366f1">
     <title>Budget Tracker Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -362,23 +372,47 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="fw-bold h5 mb-0" style="font-family: 'Inter', sans-serif;">FinanceApp</span>
         </div>
 
-        <!-- Profile -->
-        <a href="profile.php" class="rounded-circle bg-white p-1 shadow-sm border d-block"
-            style="width: 40px; height: 40px;">
-            <?php
-            $h_profile_img = $_SESSION['profile_image'] ?? '';
-            $h_avatar_url = 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['username'] ?? 'User') . '&background=6366f1&color=fff';
+        <div class="d-flex align-items-center gap-2">
+            <!-- Language Toggle (Mobile) -->
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle hide-arrow"
+                    data-bs-toggle="dropdown">
+                    <span class="fs-2"><?php echo $_SESSION['lang'] == 'jp' ? '🇯🇵' : '🇺🇸'; ?></span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2" style="min-width: 120px;">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 rounded-3 p-2 <?php echo $_SESSION['lang'] == 'en' ? 'bg-light' : ''; ?>"
+                            href="?lang=en">
+                            <span class="fs-4">🇺🇸</span> <span class="fw-bold small">English</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 rounded-3 p-2 <?php echo $_SESSION['lang'] == 'jp' ? 'bg-light' : ''; ?>"
+                            href="?lang=jp">
+                            <span class="fs-4">🇯🇵</span> <span class="fw-bold small">日本語</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-            if (!empty($h_profile_img) && $h_profile_img !== 'default.png') {
-                $h_check_path = (strpos($h_profile_img, 'uploads/') === 0) ? $h_profile_img : 'uploads/' . $h_profile_img;
-                if (file_exists($h_check_path)) {
-                    $h_avatar_url = $h_check_path;
+            <!-- Profile -->
+            <a href="profile.php" class="rounded-circle bg-white p-1 shadow-sm border d-block"
+                style="width: 40px; height: 40px;">
+                <?php
+                $h_profile_img = $_SESSION['profile_image'] ?? '';
+                $h_avatar_url = 'https://ui-avatars.com/api/?name=' . urlencode($_SESSION['username'] ?? 'User') . '&background=6366f1&color=fff';
+
+                if (!empty($h_profile_img) && $h_profile_img !== 'default.png') {
+                    $h_check_path = (strpos($h_profile_img, 'uploads/') === 0) ? $h_profile_img : 'uploads/' . $h_profile_img;
+                    if (file_exists($h_check_path)) {
+                        $h_avatar_url = $h_check_path;
+                    }
                 }
-            }
-            ?>
-            <img src="<?php echo $h_avatar_url; ?>" class="rounded-circle w-100 h-100" style="object-fit: cover;"
-                alt="Profile">
-        </a>
+                ?>
+                <img src="<?php echo $h_avatar_url; ?>" class="rounded-circle w-100 h-100" style="object-fit: cover;"
+                    alt="Profile">
+            </a>
+        </div>
     </div>
 
     <!-- Spacer -->
@@ -392,29 +426,42 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <nav class="nav flex-column">
             <a href="index.php" class="nav-link <?php echo $current_page == 'index.php' ? 'active' : ''; ?>">
-                <i class="fas fa-home me-2" style="width:20px;"></i> Dashboard
+                <i class="fas fa-home me-2" style="width:20px;"></i> <?php echo $lang['dashboard']; ?>
             </a>
             <a href="view_transactions.php?type=all"
                 class="nav-link <?php echo ($current_page == 'view_transactions.php' && ($_GET['type'] ?? '') == 'all') ? 'active' : ''; ?>">
-                <i class="fas fa-list me-2" style="width:20px;"></i> Transactions
+                <i class="fas fa-list me-2" style="width:20px;"></i> <?php echo $lang['transactions']; ?>
             </a>
             <a href="scan_receipt.php"
                 class="nav-link <?php echo $current_page == 'scan_receipt.php' ? 'active' : ''; ?>">
-                <i class="fas fa-camera me-2" style="width:20px;"></i> Scan Receipt
+                <i class="fas fa-camera me-2" style="width:20px;"></i> <?php echo $lang['scan_receipt']; ?>
             </a>
             <a href="manage_categories.php"
                 class="nav-link <?php echo $current_page == 'manage_categories.php' ? 'active' : ''; ?>">
-                <i class="fas fa-tags me-2" style="width:20px;"></i> Categories
+                <i class="fas fa-tags me-2" style="width:20px;"></i> <?php echo $lang['categories']; ?>
             </a>
             <a href="reports.php" class="nav-link <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
-                <i class="fas fa-chart-line me-2" style="width:20px;"></i> Reports
+                <i class="fas fa-chart-line me-2" style="width:20px;"></i> <?php echo $lang['reports']; ?>
             </a>
             <a href="profile.php" class="nav-link <?php echo $current_page == 'profile.php' ? 'active' : ''; ?>">
-                <i class="fas fa-user-cog me-2" style="width:20px;"></i> Profile
+                <i class="fas fa-user-cog me-2" style="width:20px;"></i> <?php echo $lang['profile']; ?>
             </a>
             <hr class="text-white">
+
+            <!-- Language Toggle (Desktop Sidebar) -->
+            <div class="px-3 mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="?lang=en"
+                        class="btn btn-sm btn-outline-primary <?php echo $_SESSION['lang'] == 'en' ? 'active' : ''; ?>">🇺🇸
+                        English</a>
+                    <a href="?lang=jp"
+                        class="btn btn-sm btn-outline-primary <?php echo $_SESSION['lang'] == 'jp' ? 'active' : ''; ?>">🇯🇵
+                        日本語</a>
+                </div>
+            </div>
+
             <a href="logout.php" class="nav-link text-danger">
-                <i class="fas fa-sign-out-alt me-2" style="width:20px;"></i> Logout
+                <i class="fas fa-sign-out-alt me-2" style="width:20px;"></i> <?php echo $lang['logout']; ?>
             </a>
         </nav>
     </div>

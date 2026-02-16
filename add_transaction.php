@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_SESSION['user_id'];
@@ -16,17 +13,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $description = trim($_POST['description']);
 
     if (empty($type) || empty($category) || empty($amount) || empty($date)) {
-        $_SESSION['error'] = "All fields except description are required.";
+        $_SESSION['error'] = $lang['fill_all_fields'];
     } else {
         try {
-            $stmt = $pdo->prepare("INSERT INTO transactions (user_id, type, category, amount, date, description) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO transactions (user_id, type, category, amount, date, description) VALUES (?, ?, ?, ?,
+?, ?)");
             if ($stmt->execute([$user_id, $type, $category, $amount, $date, $description])) {
-                $_SESSION['success'] = "Transaction added successfully!";
+                $_SESSION['success'] = $lang['transaction_added'];
             } else {
-                $_SESSION['error'] = "Failed to add transaction.";
+                $_SESSION['error'] = $lang['transaction_failed'];
             }
         } catch (PDOException $e) {
-            $_SESSION['error'] = "Database Error: " . $e->getMessage();
+            $_SESSION['error'] = $lang['db_error'] . $e->getMessage();
         }
     }
 

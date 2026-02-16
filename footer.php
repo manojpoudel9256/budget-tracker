@@ -6,12 +6,12 @@
 <nav class="bottom-nav d-md-none">
     <a href="index.php" class="bottom-nav-item <?php echo $current_page == 'index.php' ? 'active' : ''; ?>">
         <i class="fas fa-home"></i>
-        <span>Home</span>
+        <span><?php echo $lang['home']; ?></span>
     </a>
     <a href="view_transactions.php?type=all"
         class="bottom-nav-item <?php echo $current_page == 'view_transactions.php' ? 'active' : ''; ?>">
         <i class="fas fa-list-ul"></i>
-        <span>History</span>
+        <span><?php echo $lang['history']; ?></span>
     </a>
 
     <!-- Central FAB Holder -->
@@ -24,11 +24,11 @@
     <a href="scan_receipt.php"
         class="bottom-nav-item <?php echo $current_page == 'scan_receipt.php' ? 'active' : ''; ?>">
         <i class="fas fa-camera"></i>
-        <span>Scan</span>
+        <span><?php echo $lang['scan']; ?></span>
     </a>
     <a href="reports.php" class="bottom-nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">
         <i class="fas fa-chart-pie"></i>
-        <span>Report</span>
+        <span><?php echo $lang['report']; ?></span>
     </a>
 </nav>
 
@@ -69,6 +69,27 @@
     setInterval(updateClock, 1000);
     // Run immediately
     updateClock();
+
+    // Auto-hide Success Alerts after 3 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert-success');
+            alerts.forEach(function (alert) {
+                // Try Bootstrap close
+                var bsAlert = bootstrap.Alert.getInstance(alert);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    // Fallback to fading out
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(function () {
+                        alert.remove();
+                    }, 500);
+                }
+            });
+        }, 3000);
+    });
 </script>
 </body>
 

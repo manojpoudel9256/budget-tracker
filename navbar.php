@@ -7,16 +7,16 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php">Dashboard</a>
+                    <a class="nav-link" href="index.php"><?php echo $lang['dashboard']; ?></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="view_transactions.php?type=income">Income</a>
+                    <a class="nav-link" href="view_transactions.php?type=income"><?php echo $lang['income']; ?></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="view_transactions.php?type=expense">Expenses</a>
+                    <a class="nav-link" href="view_transactions.php?type=expense"><?php echo $lang['expenses']; ?></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="reports.php">Reports</a>
+                    <a class="nav-link" href="reports.php"><?php echo $lang['reports']; ?></a>
                 </li>
             </ul>
             <div class="d-flex">
@@ -24,7 +24,7 @@
                     <?php if (isset($_SESSION['username']))
                         echo htmlspecialchars($_SESSION['username']); ?>
                 </span>
-                <a href="logout.php" class="btn btn-outline-light btn-sm">Logout</a>
+                <a href="logout.php" class="btn btn-outline-light btn-sm"><?php echo $lang['logout']; ?></a>
             </div>
         </div>
     </div>

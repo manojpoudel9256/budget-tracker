@@ -20,8 +20,9 @@ require 'session_check.php';
 
                 <h3 class="fw-bold mt-3 mb-1"
                     style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    AI Receipt Scanner</h3>
-                <p class="text-muted small px-4">Upload a receipt and let our AI extract the details.</p>
+                    <?php echo $lang['ai_receipt_scanner']; ?>
+                </h3>
+                <p class="text-muted small px-4"><?php echo $lang['scanner_subtitle']; ?></p>
             </div>
 
             <!-- SCANNER CARD -->
@@ -45,8 +46,8 @@ require 'session_check.php';
                                     <div class="mb-3 d-inline-block p-3 rounded-circle bg-white shadow-sm text-primary">
                                         <i class="fas fa-camera fa-2x"></i>
                                     </div>
-                                    <h6 class="fw-bold text-dark mb-1">Tap to Upload</h6>
-                                    <p class="text-muted small mb-0">or drag and drop</p>
+                                    <h6 class="fw-bold text-dark mb-1"><?php echo $lang['tap_to_upload']; ?></h6>
+                                    <p class="text-muted small mb-0"><?php echo $lang['drag_and_drop']; ?></p>
                                 </div>
 
                                 <!-- Image Preview -->
@@ -57,7 +58,7 @@ require 'session_check.php';
                                     <div
                                         class="position-absolute bottom-0 start-0 w-100 p-2 bg-white bg-opacity-75 backdrop-blur">
                                         <p class="text-primary small fw-bold mb-0"><i class="fas fa-sync-alt me-1"></i>
-                                            Change Image</p>
+                                            <?php echo $lang['change_image']; ?></p>
                                     </div>
                                 </div>
                             </div>
@@ -69,7 +70,8 @@ require 'session_check.php';
                     <button type="submit"
                         class="btn btn-lg w-100 text-white rounded-4 fw-bold shadow-lg position-relative overflow-hidden btn-scan"
                         id="scanBtn" style="background: var(--primary-gradient); padding: 16px;">
-                        <span class="position-relative z-1"><i class="fas fa-bolt me-2"></i> Scan Now</span>
+                        <span class="position-relative z-1"><i class="fas fa-bolt me-2"></i>
+                            <?php echo $lang['scan_now']; ?></span>
                     </button>
                 </form>
 
@@ -83,8 +85,60 @@ require 'session_check.php';
                                 role="progressbar" style="width: 0%; background: var(--primary-gradient);"></div>
                         </div>
                     </div>
-                    <h5 class="fw-bold" id="scanText">Initializing...</h5>
-                    <p class="text-muted small mb-0">Our AI robot is analyzing your receipt</p>
+                    <h5 class="fw-bold" id="scanText"><?php echo $lang['initializing']; ?></h5>
+                    <p class="text-muted small mb-0"><?php echo $lang['analyzing_receipt']; ?></p>
+                </div>
+
+                <!-- Result Container -->
+                <div id="resultContainer" class="d-none fade-in-up">
+                    <div class="text-center mb-4">
+                        <div class="d-inline-block p-3 rounded-circle bg-success bg-opacity-10 text-success mb-3">
+                            <i class="fas fa-check fa-2x"></i>
+                        </div>
+                        <h4 class="fw-bold"><?php echo $lang['receipt_scanned']; ?></h4>
+                        <p class="text-muted"><?php echo $lang['transaction_added']; ?></p>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-body p-0">
+                            <div class="p-4 bg-light border-bottom">
+                                <h5 class="fw-bold mb-1" id="resStore"><?php echo $lang['store_name']; ?></h5>
+                                <p class="text-muted small mb-0" id="resDate"><?php echo $lang['date']; ?></p>
+                            </div>
+                            <div class="p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-muted"><?php echo $lang['amount']; ?></span>
+                                    <span class="fw-bold fs-4 text-primary" id="resAmount">$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-muted"><?php echo $lang['category']; ?></span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2"
+                                        id="resCategory"><?php echo $lang['category']; ?></span>
+                                </div>
+                                <div class="mb-0">
+                                    <span class="d-block text-muted mb-2"><?php echo $lang['description']; ?></span>
+                                    <p class="text-dark bg-light p-3 rounded-3 mb-0 small" id="resDesc">Description
+                                        text...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button onclick="location.reload()"
+                                class="btn btn-light w-100 py-3 rounded-3 fw-bold text-muted">
+                                <i class="fas fa-camera me-2"></i> <?php echo $lang['scan_another']; ?>
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="index.php"
+                                class="btn btn-primary w-100 py-3 rounded-3 fw-bold text-white shadow-sm"
+                                style="background: var(--primary-gradient);">
+                                <i class="fas fa-home me-2"></i> <?php echo $lang['dashboard']; ?>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -162,7 +216,13 @@ require 'session_check.php';
         }
     }
 
-    document.getElementById('scanForm').addEventListener('submit', function () {
+    document.getElementById('scanForm').addEventListener('submit', function (e) {
+        e.preventDefault(); // Prevent default form submission
+
+        let formData = new FormData(this);
+        let scanBtn = document.getElementById('scanBtn');
+
+        // UI Transitions
         document.getElementById('scanForm').classList.add('d-none');
         document.getElementById('loadingState').classList.remove('d-none');
 
@@ -170,12 +230,18 @@ require 'session_check.php';
         let progressBar = document.getElementById('scanProgressBar');
         let scanText = document.getElementById('scanText');
         let width = 0;
-        let messages = ["Scanning...", "Identifying Text...", "Extracting Dates...", "Analyzing Amounts...", "Finalizing..."];
+        let messages = [
+            "<?php echo $lang['scanning_progress_1']; ?>",
+            "<?php echo $lang['scanning_progress_2']; ?>",
+            "<?php echo $lang['scanning_progress_3']; ?>",
+            "<?php echo $lang['scanning_progress_4']; ?>",
+            "<?php echo $lang['scanning_progress_5']; ?>"
+        ];
         let msgIndex = 0;
 
         let interval = setInterval(function () {
             width += Math.random() * 5;
-            if (width > 95) width = 95; // Wait for server
+            if (width > 90) width = 90; // Hold at 90% until response
             progressBar.style.width = width + '%';
 
             // Cycle texts
@@ -183,7 +249,50 @@ require 'session_check.php';
                 msgIndex++;
                 scanText.innerText = messages[msgIndex];
             }
-        }, 200);
+        }, 300);
+
+        // AJAX Request
+        fetch('process_receipt.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+
+                setTimeout(() => {
+                    document.getElementById('loadingState').classList.add('d-none');
+
+                    if (data.success) {
+                        // Populate results
+                        const d = data.data;
+                        document.getElementById('resStore').textContent = d.store_name;
+                        document.getElementById('resDate').textContent = d.date;
+
+                        // Format currency for Japanese Yen
+                        document.getElementById('resAmount').textContent = '¥' + parseFloat(d.amount).toLocaleString();
+
+                        document.getElementById('resCategory').textContent = d.category;
+                        document.getElementById('resDesc').textContent = d.description;
+
+                        document.getElementById('resultContainer').classList.remove('d-none');
+                    } else {
+                        // Show Error
+                        alert(data.error || "An error occurred.");
+                        location.reload(); // Fallback to reload on error for now or show error UI
+                    }
+                }, 500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                clearInterval(interval);
+                alert("A network error occurred.");
+                location.reload();
+            });
     });
 </script>
 

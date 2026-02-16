@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 $id = $_GET['id'] ?? null;
 $user_id = $_SESSION['user_id'];
@@ -38,7 +35,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "All fields except description are required.";
     } else {
         try {
-            $update = $pdo->prepare("UPDATE transactions SET type=?, category=?, amount=?, date=?, description=? WHERE id=? AND user_id=?");
+            $update = $pdo->prepare("UPDATE transactions SET type=?, category=?, amount=?, date=?, description=? WHERE id=? AND
+user_id=?");
             $update->execute([$type, $category, $amount, $date, $description, $id, $user_id]);
             header("Location: view_transactions.php?type=$type&msg=updated");
             exit;
@@ -233,8 +231,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="icon-circle">
                     <i class="fas fa-edit fa-lg"></i>
                 </div>
-                <h2>Edit Transaction</h2>
-                <p>Update your transaction details</p>
+                <h2><?php echo $lang['edit_transaction_title']; ?></h2>
+                <p><?php echo $lang['edit_desc']; ?></p>
             </div>
             <div class="edit-body">
                 <?php if ($error): ?>
@@ -250,12 +248,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <button type="button"
                             class="btn <?php echo ($transaction['type'] == 'expense') ? 'active-expense' : ''; ?>"
                             onclick="setType('expense')">
-                            <i class="fas fa-arrow-up me-2"></i> Expense
+                            <i class="fas fa-arrow-up me-2"></i> <?php echo $lang['expense']; ?>
                         </button>
                         <button type="button"
                             class="btn <?php echo ($transaction['type'] == 'income') ? 'active-income' : ''; ?>"
                             onclick="setType('income')">
-                            <i class="fas fa-arrow-down me-2"></i> Income
+                            <i class="fas fa-arrow-down me-2"></i> <?php echo $lang['income']; ?>
                         </button>
                     </div>
                     <input type="hidden" name="type" id="transactionType" value="<?php echo $transaction['type']; ?>">
@@ -263,7 +261,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <!-- Amount - Large Input -->
                     <div class="mb-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">
-                            <i class="fas fa-coins me-2"></i> Amount
+                            <i class="fas fa-coins me-2"></i> <?php echo $lang['amount']; ?>
                         </label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text bg-white border-end-0 rounded-start-3"
@@ -280,34 +278,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <!-- Category -->
                     <div class="form-floating mb-3">
                         <input type="text" name="category" class="form-control" id="category"
-                            value="<?php echo htmlspecialchars($transaction['category']); ?>" placeholder="e.g. Food"
-                            required>
-                        <label for="category"><i class="fas fa-tag me-2 text-muted"></i> Category</label>
+                            value="<?php echo htmlspecialchars($transaction['category']); ?>"
+                            placeholder="<?php echo $lang['category_placeholder']; ?>" required>
+                        <label for="category"><i class="fas fa-tag me-2 text-muted"></i>
+                            <?php echo $lang['category']; ?></label>
                     </div>
 
                     <!-- Date -->
                     <div class="form-floating mb-3">
                         <input type="date" name="date" class="form-control" id="date"
                             value="<?php echo htmlspecialchars($transaction['date']); ?>" required>
-                        <label for="date"><i class="fas fa-calendar me-2 text-muted"></i> Date</label>
+                        <label for="date"><i class="fas fa-calendar me-2 text-muted"></i>
+                            <?php echo $lang['date']; ?></label>
                     </div>
 
                     <!-- Description -->
                     <div class="form-floating mb-4">
                         <textarea name="description" class="form-control" id="description" style="height: 80px"
-                            placeholder="Notes"><?php echo htmlspecialchars($transaction['description']); ?></textarea>
-                        <label for="description"><i class="fas fa-sticky-note me-2 text-muted"></i> Notes
-                            (Optional)</label>
+                            placeholder="<?php echo $lang['notes']; ?>"><?php echo htmlspecialchars($transaction['description']); ?></textarea>
+                        <label for="description"><i class="fas fa-sticky-note me-2 text-muted"></i>
+                            <?php echo $lang['notes']; ?> (<?php echo $lang['add_note_optional']; ?>)</label>
                     </div>
 
                     <!-- Buttons -->
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-save">
-                            <i class="fas fa-check me-2"></i> Save Changes
+                            <i class="fas fa-check me-2"></i> <?php echo $lang['save_changes']; ?>
                         </button>
                         <a href="view_transactions.php?type=<?php echo $transaction['type']; ?>"
                             class="btn btn-outline-secondary btn-cancel">
-                            <i class="fas fa-times me-2"></i> Cancel
+                            <i class="fas fa-times me-2"></i> <?php echo $lang['cancel']; ?>
                         </a>
                     </div>
                 </form>

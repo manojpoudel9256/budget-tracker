@@ -1,22 +1,19 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 $user_id = $_SESSION['user_id'];
 
 // Get categories by type for datalist (Merge saved categories + history)
 $cat_stmt = $pdo->prepare("
-    SELECT DISTINCT name, type FROM (
-        SELECT name, type FROM categories WHERE user_id = ?
-        UNION
-        SELECT category as name, type FROM transactions WHERE user_id = ?
-    ) as combined_categories
-    ORDER BY type, name
+SELECT DISTINCT name, type FROM (
+SELECT name, type FROM categories WHERE user_id = ?
+UNION
+SELECT category as name, type FROM transactions WHERE user_id = ?
+) as combined_categories
+ORDER BY type, name
 ");
 $cat_stmt->execute([$user_id, $user_id]);
 $all_categories = $cat_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -45,7 +42,7 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                 <a href="<?php echo htmlspecialchars($redirect_to); ?>" class="text-dark">
                     <i class="fas fa-arrow-left fa-lg"></i>
                 </a>
-                <h5 class="fw-bold mb-0">Add Transaction</h5>
+                <h5 class="fw-bold mb-0"><?php echo $lang['add_transaction']; ?></h5>
                 <div style="width: 24px;"></div> <!-- Spacer -->
             </div>
 
@@ -55,7 +52,7 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                     class="btn btn-light rounded-circle shadow-sm me-3">
                     <i class="fas fa-arrow-left text-muted"></i>
                 </a>
-                <h4 class="fw-bold mb-0">New Transaction</h4>
+                <h4 class="fw-bold mb-0"><?php echo $lang['new_transaction']; ?></h4>
             </div>
 
             <div class="glass-card-mobile-transparent p-0 p-md-4">
@@ -78,7 +75,7 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                 <?php endif; ?>
 
                 <form action="add_transaction.php" method="POST" id="transactionForm">
-                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($redirect_to); ?>">
+                    <input type="hidden" name="redirect_to" value="add_transaction_page.php">
                     <input type="hidden" name="type" id="transactionType" value="expense">
 
                     <!-- 1. TYPE TOGGLE (Segmented Control) -->
@@ -90,16 +87,19 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                             </div>
                             <button type="button"
                                 class="btn w-50 rounded-pill border-0 py-2 small fw-bold z-2 type-btn active text-white"
-                                data-type="expense" onclick="selectType('expense')">Expense</button>
+                                data-type="expense"
+                                onclick="selectType('expense')"><?php echo $lang['expense']; ?></button>
                             <button type="button"
                                 class="btn w-50 rounded-pill border-0 py-2 small fw-bold z-2 type-btn text-muted"
-                                data-type="income" onclick="selectType('income')">Income</button>
+                                data-type="income"
+                                onclick="selectType('income')"><?php echo $lang['income']; ?></button>
                         </div>
                     </div>
 
                     <!-- 2. HERO AMOUNT INPUT -->
                     <div class="text-center mb-5 px-4 animate-enter delay-1">
-                        <label class="d-block text-muted text-uppercase fw-bold small mb-1 ls-1">Amount</label>
+                        <label
+                            class="d-block text-muted text-uppercase fw-bold small mb-1 ls-1"><?php echo $lang['amount']; ?></label>
                         <div class="d-flex align-items-center justify-content-center"
                             style="max-width: 100%; overflow: hidden;">
                             <span class="display-4 fw-bold text-dark me-1"
@@ -118,7 +118,7 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                         <div class="d-flex align-items-center border-bottom pb-3 mb-3">
                             <div class="icon-circle bg-light text-muted me-3"><i class="fas fa-calendar-alt"></i></div>
                             <div class="flex-grow-1">
-                                <label class="small text-muted fw-bold d-block">Date</label>
+                                <label class="small text-muted fw-bold d-block"><?php echo $lang['date']; ?></label>
                                 <input type="date" name="date" class="form-control border-0 p-0 fw-bold text-dark"
                                     value="<?php echo date('Y-m-d'); ?>" required style="font-size: 1rem;">
                             </div>
@@ -128,10 +128,11 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                         <div class="d-flex align-items-center border-bottom pb-3 mb-3">
                             <div class="icon-circle bg-light text-muted me-3"><i class="fas fa-tag"></i></div>
                             <div class="flex-grow-1 position-relative">
-                                <label class="small text-muted fw-bold d-block">Category</label>
+                                <label class="small text-muted fw-bold d-block"><?php echo $lang['category']; ?></label>
                                 <input type="text" name="category" id="categoryInput"
-                                    class="form-control border-0 p-0 fw-bold text-dark" placeholder="Select or type..."
-                                    required autocomplete="off" list="dl_cats">
+                                    class="form-control border-0 p-0 fw-bold text-dark"
+                                    placeholder="<?php echo $lang['select_or_type']; ?>" required autocomplete="off"
+                                    list="dl_cats">
                                 <datalist id="dl_cats"></datalist>
                             </div>
                         </div>
@@ -140,10 +141,10 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                         <div class="d-flex align-items-center">
                             <div class="icon-circle bg-light text-muted me-3"><i class="fas fa-pen"></i></div>
                             <div class="flex-grow-1">
-                                <label class="small text-muted fw-bold d-block">Note</label>
+                                <label class="small text-muted fw-bold d-block"><?php echo $lang['notes']; ?></label>
                                 <input type="text" name="description"
                                     class="form-control border-0 p-0 fw-bold text-dark"
-                                    placeholder="Add a note (optional)">
+                                    placeholder="<?php echo $lang['add_note_optional']; ?>">
                             </div>
                         </div>
                     </div>
@@ -160,7 +161,7 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
                         <button type="submit"
                             class="btn w-100 py-3 rounded-4 text-white fw-bold shadow-lg transform-active-scale"
                             id="submitBtn" style="background: var(--expense-gradient); font-size: 1.1rem;">
-                            Save Transaction
+                            <?php echo $lang['save_transaction']; ?>
                         </button>
                     </div>
 
@@ -242,12 +243,12 @@ $redirect_to = isset($_GET['redirect_to']) ? $_GET['redirect_to'] : 'index.php';
             typeIndicator.style.transform = 'translateX(0)';
             typeIndicator.style.background = 'var(--expense-gradient)';
             submitBtn.style.background = 'var(--expense-gradient)';
-            submitBtn.innerHTML = '<i class="fas fa-minus-circle me-2"></i> Save Expense';
+            submitBtn.innerHTML = '<i class="fas fa-minus-circle me-2"></i> <?php echo $lang['save_expense']; ?>';
         } else {
             typeIndicator.style.transform = 'translateX(100%)';
             typeIndicator.style.background = 'var(--income-gradient)';
             submitBtn.style.background = 'var(--income-gradient)';
-            submitBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i> Save Income';
+            submitBtn.innerHTML = '<i class="fas fa-plus-circle me-2"></i> <?php echo $lang['save_income']; ?>';
         }
 
         renderChips(type);

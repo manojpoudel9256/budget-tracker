@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 $user_id = $_SESSION['user_id'];
 
@@ -197,8 +194,8 @@ $existing_budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="icon-circle">
                     <i class="fas fa-bullseye fa-2x"></i>
                 </div>
-                <h2>Set Budget Goal</h2>
-                <p>Control your monthly spending</p>
+                <h2><?php echo $lang['set_budget_title']; ?></h2>
+                <p><?php echo $lang['control_spending']; ?></p>
             </div>
             <div class="budget-body">
                 <?php if (isset($_SESSION['error'])): ?>
@@ -219,13 +216,14 @@ $existing_budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php if (!empty($existing_budgets)): ?>
                     <div class="existing-budgets">
                         <h6 class="text-muted small fw-bold text-uppercase mb-3">
-                            <i class="fas fa-list me-2"></i>Current Budgets
+                            <i class="fas fa-list me-2"></i><?php echo $lang['current_budgets']; ?>
                         </h6>
                         <?php foreach ($existing_budgets as $b): ?>
                             <div class="budget-item">
                                 <span class="fw-medium"><?php echo htmlspecialchars($b['category']); ?></span>
                                 <span class="fw-bold text-success">
-                                    <?php echo $_SESSION['currency'] == 'USD' ? '$' : $_SESSION['currency']; ?>        <?php echo number_format($b['amount']); ?>
+                                    <?php echo $_SESSION['currency'] == 'USD' ? '$' : $_SESSION['currency']; ?>
+                                    <?php echo number_format($b['amount']); ?>
                                 </span>
                             </div>
                         <?php endforeach; ?>
@@ -238,10 +236,10 @@ $existing_budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Category -->
                     <div class="mb-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">
-                            <i class="fas fa-tag me-1"></i> Category
+                            <i class="fas fa-tag me-1"></i> <?php echo $lang['category']; ?>
                         </label>
                         <input type="text" name="category" class="form-control form-control-lg" list="categoryList"
-                            placeholder="e.g. Food, Entertainment" required autocomplete="off">
+                            placeholder="<?php echo $lang['category_placeholder']; ?>" required autocomplete="off">
                         <datalist id="categoryList">
                             <?php foreach ($expense_categories as $cat): ?>
                                 <option value="<?php echo htmlspecialchars($cat); ?>">
@@ -252,7 +250,7 @@ $existing_budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Amount -->
                     <div class="mb-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">
-                            <i class="fas fa-coins me-1"></i> Monthly Limit
+                            <i class="fas fa-coins me-1"></i> <?php echo $lang['monthly_limit']; ?>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"
@@ -264,16 +262,16 @@ $existing_budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 style="border: 2px solid #e2e8f0; border-left: 0; border-radius: 0 12px 12px 0;"
                                 onfocus="this.placeholder = ''" onblur="this.placeholder = '10000'">
                         </div>
-                        <small class="text-muted mt-2 d-block">Set a spending limit for this category</small>
+                        <small class="text-muted mt-2 d-block"><?php echo $lang['limit_desc']; ?></small>
                     </div>
 
                     <!-- Buttons -->
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success btn-save text-white">
-                            <i class="fas fa-check me-2"></i> Set Budget
+                            <i class="fas fa-check me-2"></i> <?php echo $lang['set_budget']; ?>
                         </button>
                         <a href="index.php" class="btn btn-outline-secondary btn-cancel">
-                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                            <i class="fas fa-arrow-left me-2"></i> <?php echo $lang['back_dashboard']; ?>
                         </a>
                     </div>
                 </form>

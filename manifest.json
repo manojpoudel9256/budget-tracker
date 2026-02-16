@@ -1,0 +1,23 @@
+{
+    "name": "FinanceApp - Budget Tracker",
+    "short_name": "FinanceApp",
+    "description": "Track your income, expenses, and budget goals with ease.",
+    "start_url": "./index.php",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#6366f1",
+    "theme_color": "#6366f1",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "apple-touch-icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "apple-touch-icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

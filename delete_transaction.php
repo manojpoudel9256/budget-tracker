@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 $id = $_GET['id'] ?? null;
 $user_id = $_SESSION['user_id'];

@@ -7,7 +7,9 @@ A comprehensive, AI-powered personal financial management tool built with **PHP*
 ## ✨ Features
 
 - **📊 Interactive Dashboard**: Real-time overview of your Balance, Income, and Expenses with "Fade-in" animations.
-- **🤖 AI Receipt Scanner**: Upload Japanese/English receipts, and the integrated **Google Gemini 2.5 Flash AI** will automatically extract details.
+- **   **AI-Powered Insights**: Use Gemini API to analyze spending habits and get personalized financial advice.
+*   **PWA Support**: Installable as a mobile app with a custom icon and splash screen support.
+*   **Receipt Scanning**: Upload receipts to automatically extract transaction details.
 - **✨ Smart Transactions**: Add transactions easily with **autocomplete categories** that dynamically filter based on Income/Expense type.
 - **📈 Visual Analytics**: Dedicated Reports page with **Expense Breakdown (Pie Chart)** and **Monthly Spending Trends (Bar Chart)**.
 - **🎯 Budget Goals**: Set monthly spending limits per category and get visual progress bars.

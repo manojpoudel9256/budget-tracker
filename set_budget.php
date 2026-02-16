@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_SESSION['user_id'];
@@ -14,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $redirect_to = isset($_POST['redirect_to']) ? $_POST['redirect_to'] : 'index.php';
 
     if (empty($category) || empty($amount)) {
-        $_SESSION['error'] = "Category and Amount are required.";
+        $_SESSION['error'] = $lang['category_amount_required'];
     } else {
         try {
             // Check if budget for category already exists
@@ -25,15 +22,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Update existing
                 $update = $pdo->prepare("UPDATE budgets SET amount = ? WHERE user_id = ? AND category = ?");
                 $update->execute([$amount, $user_id, $category]);
-                $_SESSION['success'] = "Budget updated for $category!";
+                $_SESSION['success'] = sprintf($lang['budget_updated_msg'], htmlspecialchars($category));
             } else {
                 // Insert new
                 $insert = $pdo->prepare("INSERT INTO budgets (user_id, category, amount) VALUES (?, ?, ?)");
                 $insert->execute([$user_id, $category, $amount]);
-                $_SESSION['success'] = "Budget set for $category!";
+                $_SESSION['success'] = sprintf($lang['budget_set_msg'], htmlspecialchars($category));
             }
         } catch (PDOException $e) {
-            $_SESSION['error'] = "Database Error: " . $e->getMessage();
+            $_SESSION['error'] = $lang['db_error'] . $e->getMessage();
         }
     }
     header("Location: " . $redirect_to);

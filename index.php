@@ -1,11 +1,8 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+$user_id = $_SESSION['user_id'];
 
 $user_id = $_SESSION['user_id'];
 
@@ -34,7 +31,8 @@ $budgets = $budget_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate simplified budget progress (Total Spent by Category Ever vs Limit)
 // Note: In a real app, you'd likely sum expenses only for the CURRENT MONTH
-$cat_stmt = $pdo->prepare("SELECT category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type='expense' AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) GROUP BY category");
+$cat_stmt = $pdo->prepare("SELECT category, SUM(amount) as spent FROM transactions WHERE user_id = ? AND type='expense'
+AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE()) GROUP BY category");
 $cat_stmt->execute([$user_id]);
 $current_month_spending = $cat_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
@@ -42,12 +40,12 @@ $budget_alerts = [];
 
 // --- FETCH CATEGORIES FOR AUTOCOMPLETE (Merge saved + history) ---
 $cat_list_stmt = $pdo->prepare("
-    SELECT DISTINCT name, type FROM (
-        SELECT name, type FROM categories WHERE user_id = ?
-        UNION
-        SELECT category as name, type FROM transactions WHERE user_id = ?
-    ) as combined_categories
-    ORDER BY type, name ASC
+SELECT DISTINCT name, type FROM (
+SELECT name, type FROM categories WHERE user_id = ?
+UNION
+SELECT category as name, type FROM transactions WHERE user_id = ?
+) as combined_categories
+ORDER BY type, name ASC
 ");
 $cat_list_stmt->execute([$user_id, $user_id]);
 $all_categories = $cat_list_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -280,7 +278,9 @@ foreach ($all_categories as $cat) {
     <!-- Greeting & Clock -->
     <div class="d-flex justify-content-between align-items-end px-3 mb-0 pt-0">
         <div>
-            <h6 class="text-muted fw-bold mb-0 text-uppercase small ls-1" id="greetingTime">Good Morning</h6>
+            <h6 class="text-muted fw-bold mb-0 text-uppercase small ls-1" id="greetingTime">
+                <?php echo $lang['good_morning']; ?>
+            </h6>
             <h2 class="fw-bold mb-0 text-dark display-6" style="font-size: 1.5rem;">
                 <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>
             </h2>
@@ -384,9 +384,8 @@ foreach ($all_categories as $cat) {
         </div>
     </div>
 
-    <!-- QUICK ACTIONS -->
     <div class="mb-4">
-        <h6 class="text-muted fw-bold mb-3 small text-uppercase px-3">Quick Actions</h6>
+        <h6 class="text-muted fw-bold mb-3 small text-uppercase px-3"><?php echo $lang['quick_actions']; ?></h6>
         <div class="quick-actions-scroll">
             <a href="add_transaction_page.php"
                 class="d-flex flex-column align-items-center text-decoration-none text-dark bg-white p-3 rounded-4 shadow-sm border border-light"
@@ -395,7 +394,7 @@ foreach ($all_categories as $cat) {
                     style="width: 50px; height: 50px;">
                     <i class="fas fa-plus fa-lg"></i>
                 </div>
-                <span class="small fw-bold">Add New</span>
+                <span class="small fw-bold"><?php echo $lang['add_new']; ?></span>
             </a>
             <a href="scan_receipt.php"
                 class="d-flex flex-column align-items-center text-decoration-none text-dark bg-white p-3 rounded-4 shadow-sm border border-light"
@@ -404,7 +403,16 @@ foreach ($all_categories as $cat) {
                     style="width: 50px; height: 50px;">
                     <i class="fas fa-camera fa-lg"></i>
                 </div>
-                <span class="small fw-bold">Scan</span>
+                <span class="small fw-bold"><?php echo $lang['scan_receipt']; ?></span>
+            </a>
+            <a href="ai_advisor.php"
+                class="d-flex flex-column align-items-center text-decoration-none text-dark bg-white p-3 rounded-4 shadow-sm border border-light"
+                style="min-width: 100px;">
+                <div class="rounded-circle bg-indigo-100 text-indigo-600 mb-2 d-flex align-items-center justify-content-center"
+                    style="width: 50px; height: 50px; background: #e0e7ff; color: #4338ca;">
+                    <i class="fas fa-robot fa-lg"></i>
+                </div>
+                <span class="small fw-bold"><?php echo $lang['advisor']; ?></span>
             </a>
             <a href="#" data-bs-toggle="modal" data-bs-target="#setBudgetModal"
                 class="d-flex flex-column align-items-center text-decoration-none text-dark bg-white p-3 rounded-4 shadow-sm border border-light"
@@ -413,7 +421,7 @@ foreach ($all_categories as $cat) {
                     style="width: 50px; height: 50px;">
                     <i class="fas fa-bullseye fa-lg"></i>
                 </div>
-                <span class="small fw-bold">Budget</span>
+                <span class="small fw-bold"><?php echo $lang['budget']; ?></span>
             </a>
             <a href="reports.php"
                 class="d-flex flex-column align-items-center text-decoration-none text-dark bg-white p-3 rounded-4 shadow-sm border border-light"
@@ -422,7 +430,7 @@ foreach ($all_categories as $cat) {
                     style="width: 50px; height: 50px;">
                     <i class="fas fa-chart-line fa-lg"></i>
                 </div>
-                <span class="small fw-bold">Stats</span>
+                <span class="small fw-bold"><?php echo $lang['stats']; ?></span>
             </a>
         </div>
     </div>
@@ -434,15 +442,16 @@ foreach ($all_categories as $cat) {
         <div class="col-lg-7">
             <div class="glass-card mb-4 p-4" style="border-radius: 24px;">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0 fw-bold text-dark">Recent Activity</h5>
-                    <a href="view_transactions.php?type=all" class="text-decoration-none small fw-bold text-primary">See
-                        All <i class="fas fa-chevron-right ms-1" style="font-size: 0.75rem;"></i></a>
+                    <h5 class="mb-0 fw-bold text-dark"><?php echo $lang['recent_activity']; ?></h5>
+                    <a href="view_transactions.php?type=all"
+                        class="text-decoration-none small fw-bold text-primary"><?php echo $lang['see_all']; ?> <i
+                            class="fas fa-chevron-right ms-1" style="font-size: 0.75rem;"></i></a>
                 </div>
 
                 <?php if (empty($recent)): ?>
                     <div class="text-center py-5 text-muted opacity-75">
                         <i class="fas fa-receipt fa-3x mb-3 opacity-25"></i>
-                        <p class="mb-0">No recent transactions</p>
+                        <p class="mb-0"><?php echo $lang['no_recent_transactions']; ?></p>
                     </div>
                 <?php else: ?>
                     <div class="d-flex flex-column gap-3">
@@ -523,17 +532,20 @@ foreach ($all_categories as $cat) {
         <div class="col-lg-5">
             <div class="glass-card mb-4 budget-card-desktop">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-bullseye text-primary me-2"></i>Monthly Budgets</h5>
+                    <h5 class="mb-0 fw-bold text-dark"><i
+                            class="fas fa-bullseye text-primary me-2"></i><?php echo $lang['monthly_budgets']; ?>
+                    </h5>
                     <a href="set_budget_page.php" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">
-                        <i class="fas fa-plus me-1"></i>Set Goal
+                        <i class="fas fa-plus me-1"></i><?php echo $lang['set_goal']; ?>
                     </a>
                 </div>
                 <div>
                     <?php if (empty($budgets)): ?>
                         <div class="text-center py-5">
                             <div class="mb-3 text-muted"><i class="fas fa-bullseye fa-3x opacity-25"></i></div>
-                            <p class="text-muted fw-bold">No budget goals set yet.</p>
-                            <a href="set_budget_page.php" class="btn btn-sm btn-primary rounded-pill mt-2">Get Started</a>
+                            <p class="text-muted fw-bold"><?php echo $lang['no_budget_goals']; ?></p>
+                            <a href="set_budget_page.php"
+                                class="btn btn-sm btn-primary rounded-pill mt-2"><?php echo $lang['get_started']; ?></a>
                         </div>
                     <?php else: ?>
                         <?php foreach ($budgets as $b):
@@ -542,7 +554,7 @@ foreach ($all_categories as $cat) {
                             $spent = $current_month_spending[$cat] ?? 0;
                             // Avoid division by zero
                             $percent = ($limit > 0) ? ($spent / $limit) * 100 : 0;
-                            
+
                             // Gradient Logic
                             if ($percent < 75) {
                                 $grad = 'linear-gradient(90deg, #10b981 0%, #34d399 100%)'; // Green
@@ -559,7 +571,9 @@ foreach ($all_categories as $cat) {
                                 <div class="d-flex justify-content-between align-items-end mb-1">
                                     <div>
                                         <div class="budget-label"><?php echo htmlspecialchars($cat); ?></div>
-                                        <small class="text-muted" style="font-size: 0.75rem;"><?php echo number_format($percent, 0); ?>% Used</small>
+                                        <small class="text-muted"
+                                            style="font-size: 0.75rem;"><?php echo number_format($percent, 0); ?>%
+                                            <?php echo $lang['used']; ?></small>
                                     </div>
                                     <div class="budget-values <?php echo $textType; ?>">
                                         <?php echo number_format($spent, 0); ?> / <?php echo number_format($limit, 0); ?>
@@ -567,7 +581,8 @@ foreach ($all_categories as $cat) {
                                 </div>
                                 <div class="progress premium-progress">
                                     <div class="progress-bar premium-progress-bar" role="progressbar"
-                                        style="width: <?php echo min($percent, 100); ?>%; background: <?php echo $grad; ?>;"></div>
+                                        style="width: <?php echo min($percent, 100); ?>%; background: <?php echo $grad; ?>;">
+                                    </div>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -576,6 +591,8 @@ foreach ($all_categories as $cat) {
             </div>
         </div>
     </div>
+
+
 
     <!-- Floating Action Button -->
     <a href="add_transaction_page.php" class="fab-btn d-md-none">

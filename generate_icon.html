@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Generate Icon</title>
+</head>
+
+<body>
+    <canvas id="icon" width="180" height="180"></canvas>
+    <script>
+        const canvas = document.getElementById('icon');
+        const ctx = canvas.getContext('2d');
+
+        // Gradient background
+        const grad = ctx.createLinearGradient(0, 0, 180, 180);
+        grad.addColorStop(0, '#6366f1');
+        grad.addColorStop(1, '#8b5cf6');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 180, 180);
+
+        // Wallet icon (white)
+        ctx.strokeStyle = 'white';
+        ctx.fillStyle = 'white';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Wallet body
+        const bx = 45, by = 60, bw = 90, bh = 65, br = 10;
+        ctx.beginPath();
+        ctx.moveTo(bx + br, by);
+        ctx.lineTo(bx + bw - br, by);
+        ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + br);
+        ctx.lineTo(bx + bw, by + bh - br);
+        ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - br, by + bh);
+        ctx.lineTo(bx + br, by + bh);
+        ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - br);
+        ctx.lineTo(bx, by + br);
+        ctx.quadraticCurveTo(bx, by, bx + br, by);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Wallet flap
+        ctx.beginPath();
+        ctx.moveTo(45, 60);
+        ctx.lineTo(45, 52);
+        ctx.quadraticCurveTo(45, 40, 57, 40);
+        ctx.lineTo(110, 40);
+        ctx.quadraticCurveTo(120, 40, 125, 50);
+        ctx.lineTo(135, 60);
+        ctx.stroke();
+
+        // Clasp circle
+        ctx.beginPath();
+        ctx.arc(125, 93, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Yen symbol
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.textAlign = 'center';
+        ctx.fillText('¥', 90, 155);
+
+        // Download link
+        const link = document.createElement('a');
+        link.download = 'icon-192.png';
+        link.href = canvas.toDataURL('image/png');
+        link.textContent = '⬇ Download Icon (Right-click → Save As)';
+        link.style.cssText = 'display:block;margin:20px;font-size:18px;';
+        document.body.appendChild(link);
+
+        // Also generate a 512px version
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = 512; canvas2.height = 512;
+        const ctx2 = canvas2.getContext('2d');
+        ctx2.drawImage(canvas, 0, 0, 512, 512);
+        const link2 = document.createElement('a');
+        link2.download = 'icon-512.png';
+        link2.href = canvas2.toDataURL('image/png');
+        link2.textContent = '⬇ Download 512px Icon';
+        link2.style.cssText = 'display:block;margin:20px;font-size:18px;';
+        document.body.appendChild(link2);
+
+        document.body.innerHTML += '<p style="margin:20px;color:green;font-size:16px;">✅ Icons generated! Right-click the links to save, then place the files in your budget-tracker folder.</p>';
+    </script>
+</body>
+
+</html>

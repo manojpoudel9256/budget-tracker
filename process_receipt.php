@@ -1,5 +1,5 @@
 <?php
-session_start();
+require 'session_check.php';
 require 'db_connect.php';
 
 // --- CONFIGURATION ---
@@ -7,6 +7,10 @@ $API_KEY = GEMINI_API_KEY; // Loaded from db_connect.php -> config.php
 $API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $API_KEY;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['receipt_image'])) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'No file uploaded']);
+        exit;
+    }
     header("Location: scan_receipt.php?error=No file uploaded");
     exit;
 }
@@ -28,6 +32,10 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
         UPLOAD_ERR_EXTENSION => "A PHP extension stopped the file upload."
     ];
     $msg = $errorMessages[$file['error']] ?? "Unknown upload error occurred.";
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => $msg]);
+        exit;
+    }
     header("Location: scan_receipt.php?error=" . urlencode($msg));
     exit;
 }
@@ -35,6 +43,10 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
 // Check file size (custom limit, e.g., 5MB)
 $maxSize = 5 * 1024 * 1024; // 5 MB
 if ($file['size'] > $maxSize) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'File is too large (Max 5MB). Please resize.']);
+        exit;
+    }
     header("Location: scan_receipt.php?error=File is too large (Max 5MB). Please resize.");
     exit;
 }
@@ -46,6 +58,10 @@ if (!in_array($file['type'], $allowedTypes)) {
     // Soft check for generic binary types if extension matches
     $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
     if (!in_array($fileExt, $allowedExts)) {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            echo json_encode(['success' => false, 'error' => 'Invalid file type. JPG, PNG, WEBP, HEIC only.']);
+            exit;
+        }
         header("Location: scan_receipt.php?error=Invalid file type. JPG, PNG, WEBP, HEIC only.");
         exit;
     }
@@ -62,6 +78,10 @@ $filename = uniqid('receipt_', true) . '.' . $extension;
 $filepath = $uploadDir . $filename;
 
 if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'Failed to save image.']);
+        exit;
+    }
     header("Location: scan_receipt.php?error=Failed to save image.");
     exit;
 }
@@ -71,15 +91,18 @@ $imageData = base64_encode(file_get_contents($filepath));
 $mimeType = $file['type'];
 
 // 4. Construct AI Prompt
+$user_lang = $_SESSION['lang'] ?? 'en';
+$target_lang = ($user_lang == 'jp') ? 'Japanese' : 'English';
+
 $promptText = <<<EOT
-You are an expert receipt analyzer. Look at this receipt image (likely in Japanese).
+You are an expert receipt analyzer. Look at this receipt image (likely in Japanese or English).
 Extract the following information and output ONLY a valid JSON object:
 {
-  "store_name": "Translate store name to English (e.g., 'Seven Eleven')",
+  "store_name": "Name of the store (Translate to $target_lang if needed)",
   "date": "YYYY-MM-DD (Use today's date if not found)",
   "amount": 0.00 (Total numerical amount),
   "category": "Best guess from: Groceries, Transport, Dining Out, Entertainment, Rent, Utilities, Shopping, Salary, Other",
-  "description": "Short summary of items (translated to English)"
+  "description": "Short summary of items (translated to $target_lang)"
 }
 Do not include markdown formatting (like ```json), just the raw JSON string.
 EOT;
@@ -115,13 +138,19 @@ $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($httpCode !== 200 || $curlError) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'AI Analysis Failed: ' . ($curlError ?: "HTTP $httpCode")]);
+        exit;
+    }
     // Show detailed error for debugging
     echo "<h1>AI Analysis Failed</h1>";
     echo "<p><strong>HTTP Code:</strong> $httpCode</p>";
     if ($curlError) {
         echo "<p><strong>Curl Error:</strong> $curlError</p>";
     }
-    echo "<p><strong>API Response:</strong> <pre>" . htmlspecialchars($response) . "</pre></p>";
+    echo "<p><strong>API Response:</strong>
+    <pre>" . htmlspecialchars($response) . "</pre>
+    </p>";
     echo "<p><a href='scan_receipt.php'>Go Back</a></p>";
     exit;
 }
@@ -137,6 +166,10 @@ $aiText = preg_replace('/^```json\s*|\s*```$/', '', trim($aiText));
 $data = json_decode($aiText, true);
 
 if (!$data) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'Could not parse receipt data from AI.']);
+        exit;
+    }
     header("Location: scan_receipt.php?error=Could not parse receipt data.");
     exit;
 }
@@ -167,6 +200,10 @@ if (!$categoryId) {
         $categoryId = $stmt->fetchColumn();
 
         if (!$categoryId) {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                echo json_encode(['success' => false, 'error' => 'Error: No categories found and could not create default.']);
+                exit;
+            }
             header("Location: scan_receipt.php?error=Error: No categories found and could not create default.");
             exit;
         }
@@ -175,7 +212,8 @@ if (!$categoryId) {
 
 // 8. Insert into Database
 try {
-    $stmt = $pdo->prepare("INSERT INTO transactions (user_id, category_id, category, type, amount, date, description) VALUES (?, ?, ?, 'expense', ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO transactions (user_id, category_id, category, type, amount, date, description)
+    VALUES (?, ?, ?, 'expense', ?, ?, ?)");
     $stmt->execute([
         $userId,
         $categoryId,
@@ -186,10 +224,28 @@ try {
     ]);
 
     // Success!
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Receipt Added: ' . $data['store_name'],
+            'data' => [
+                'store_name' => $data['store_name'],
+                'date' => $data['date'],
+                'amount' => $data['amount'],
+                'category' => $categoryName,
+                'description' => $data['description']
+            ]
+        ]);
+        exit;
+    }
     header("Location: index.php?success=Receipt Added: " . urlencode($data['store_name']));
     exit;
 
 } catch (PDOException $e) {
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        echo json_encode(['success' => false, 'error' => 'Database Error: ' . $e->getMessage()]);
+        exit;
+    }
     header("Location: scan_receipt.php?error=Database Error: " . $e->getMessage());
     exit;
 }

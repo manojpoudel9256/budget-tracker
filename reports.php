@@ -6,19 +6,26 @@ $user_id = $_SESSION['user_id'];
 $currency_symbol = $_SESSION['currency'] == 'USD' ? '$' : $_SESSION['currency'];
 
 // --- DATE LOGIC ---
-$month_list = [];
-for ($i = 0; $i < 12; $i++) {
-    $month_list[] = [
-        'offset' => -$i,
-        'label' => date('M', strtotime("-$i month")),
-        'year' => date('Y', strtotime("-$i month")),
-        'value' => date('Y-m', strtotime("-$i month"))
-    ];
-}
+// --- FILTER LOGIC ---
+$report_type = $_GET['report_type'] ?? 'monthly';
+$selected_month = $_GET['month'] ?? date('m');
+$selected_year = $_GET['year'] ?? date('Y');
 
-$month_offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
-$view_start = date('Y-m-01', strtotime("$month_offset month"));
-$view_end = date('Y-m-t', strtotime("$month_offset month"));
+// Validate Year (simple range check or just cast)
+$selected_year = (int) $selected_year;
+if ($selected_year < 2000 || $selected_year > 2100)
+    $selected_year = date('Y');
+
+if ($report_type === 'yearly') {
+    $view_start = "$selected_year-01-01";
+    $view_end = "$selected_year-12-31";
+    $view_label = "Year $selected_year";
+} else {
+    // Monthly
+    $view_start = "$selected_year-$selected_month-01";
+    $view_end = date('Y-m-t', strtotime($view_start));
+    $view_label = date('F Y', strtotime($view_start));
+}
 
 // FETCHER
 function getSum($pdo, $uid, $type, $start, $end)
@@ -59,8 +66,8 @@ if ($total_expense > 0 && !empty($cat_data)) {
                 <i class="fas fa-exclamation-triangle fa-lg"></i>
             </div>
             <div>
-                <h6 class="fw-bold text-dark mb-1">High Spending Alert</h6>
-                <p class="text-muted small mb-0"><strong>' . htmlspecialchars($top['category']) . '</strong> is ' . number_format($pct, 0) . '% of expenses.</p>
+                <h6 class="fw-bold text-dark mb-1">' . $lang['high_spending_alert'] . '</h6>
+                <p class="text-muted small mb-0">' . sprintf($lang['spending_alert_msg'], htmlspecialchars($top['category']), number_format($pct, 0)) . '</p>
             </div>
         </div>';
     } else {
@@ -70,8 +77,8 @@ if ($total_expense > 0 && !empty($cat_data)) {
                 <i class="fas fa-check-circle fa-lg"></i>
             </div>
             <div>
-                <h6 class="fw-bold text-dark mb-1">On Track</h6>
-                <p class="text-muted small mb-0">Your spending is balanced.</p>
+                <h6 class="fw-bold text-dark mb-1">' . $lang['on_track'] . '</h6>
+                <p class="text-muted small mb-0">' . $lang['spending_balanced'] . '</p>
             </div>
         </div>';
     }
@@ -82,29 +89,51 @@ if ($total_expense > 0 && !empty($cat_data)) {
                 <i class="fas fa-wallet fa-lg"></i>
             </div>
             <div>
-                <h6 class="fw-bold text-dark mb-1">Ready to Track</h6>
-                <p class="text-muted small mb-0">No expenses found for ' . date('F', strtotime($view_start)) . ' yet.</p>
+                <h6 class="fw-bold text-dark mb-1">' . $lang['ready_to_track'] . '</h6>
+                <p class="text-muted small mb-0">' . $lang['no_expenses_found'] . '</p>
             </div>
         </div>';
 }
 
-// 3. Daily Spending Trend (Line Chart)
-$days_in_month = (int) date('t', strtotime($view_start));
-$daily_labels = [];
-$daily_values = [];
-$daily_map = [];
+// 3. Trend Line Chart (Daily or Monthly)
+$trend_labels = [];
+$trend_values = [];
 
-for ($d = 1; $d <= $days_in_month; $d++) {
-    $daily_map[$d] = 0;
-    $daily_labels[] = $d;
-}
+if ($report_type === 'yearly') {
+    // Group by Month (1-12)
+    for ($m = 1; $m <= 12; $m++) {
+        $trend_labels[] = date('M', mktime(0, 0, 0, $m, 1));
+        $trend_values[$m] = 0;
+    }
 
-$stmt = $pdo->prepare("SELECT DAY(date) as day, SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND date BETWEEN ? AND ? GROUP BY day");
-$stmt->execute([$user_id, $view_start, $view_end]);
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $daily_map[$row['day']] = (float) $row['total'];
+    $stmt = $pdo->prepare("SELECT MONTH(date) as m, SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND date BETWEEN ? AND ? GROUP BY m");
+    $stmt->execute([$user_id, $view_start, $view_end]);
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // adjust index (0-11)
+        $trend_values[$row['m']] = (float) $row['total'];
+    }
+    // re-index to 0-based array matching labels
+    $trend_values = array_values($trend_values);
+
+} else {
+    // Group by Day
+    $days_in_month = (int) date('t', strtotime($view_start));
+    $daily_map = []; // helper
+
+    for ($d = 1; $d <= $days_in_month; $d++) {
+        $daily_map[$d] = 0;
+        $trend_labels[] = $d;
+    }
+
+    $stmt = $pdo->prepare("SELECT DAY(date) as day, SUM(amount) as total FROM transactions WHERE user_id = ? AND type = 'expense' AND date BETWEEN ? AND ? GROUP BY day");
+    $stmt->execute([$user_id, $view_start, $view_end]);
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $daily_map[$row['day']] = (float) $row['total'];
+    }
+    $trend_values = array_values($daily_map);
 }
-$daily_values = array_values($daily_map);
 
 // 4. Monthly Comparison (Last 6 Months)
 $comp_labels = [];
@@ -195,22 +224,62 @@ for ($i = 5; $i >= 0; $i--) {
     <div class="px-3 mt-2 mb-3 fade-in-up">
         <h2 class="fw-bold mb-1"
             style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            Premium Reports</h2>
-        <p class="text-muted small">Analyze your financial lifestyle.</p>
+            <?php echo $lang['premium_reports']; ?>
+        </h2>
+        <p class="text-muted small"><?php echo $lang['analyze_lifestyle']; ?></p>
     </div>
 
-    <!-- Month Scroller -->
+    <!-- FILTER FORM (Month/Year/Type) -->
     <div class="px-3 mb-4 fade-in-up delay-1">
-        <div class="month-scroller">
-            <?php foreach ($month_list as $m):
-                $isActive = ($m['offset'] == $month_offset);
-                ?>
-                <a href="?offset=<?php echo $m['offset']; ?>" class="month-pill <?php echo $isActive ? 'active' : ''; ?>">
-                    <small><?php echo $m['year']; ?></small>
-                    <span><?php echo $m['label']; ?></span>
-                </a>
-            <?php endforeach; ?>
-        </div>
+        <form action="" method="GET" class="glass-card p-3 d-flex flex-wrap align-items-end gap-2">
+
+            <div class="flex-grow-1">
+                <label class="form-label small text-muted fw-bold mb-1"><?php echo $lang['type']; ?></label>
+                <select name="report_type" class="form-select border-0 bg-light fw-bold" onchange="this.form.submit()">
+                    <option value="monthly" <?php echo ($report_type === 'monthly') ? 'selected' : ''; ?>>
+                        <?php echo $lang['monthly']; ?>
+                    </option>
+                    <option value="yearly" <?php echo ($report_type === 'yearly') ? 'selected' : ''; ?>>
+                        <?php echo $lang['yearly']; ?>
+                    </option>
+                </select>
+            </div>
+
+            <?php if ($report_type === 'monthly'): ?>
+                <div class="flex-grow-1">
+                    <label class="form-label small text-muted fw-bold mb-1"><?php echo $lang['month']; ?></label>
+                    <select name="month" class="form-select border-0 bg-light fw-bold" onchange="this.form.submit()">
+                        <?php
+                        for ($m = 1; $m <= 12; $m++) {
+                            $mStr = str_pad($m, 2, '0', STR_PAD_LEFT);
+                            $mName = date('F', mktime(0, 0, 0, $m, 1));
+                            $sel = ($mStr == $selected_month) ? 'selected' : '';
+                            echo "<option value='$mStr' $sel>$mName</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+            <?php endif; ?>
+
+            <div class="flex-grow-1">
+                <label class="form-label small text-muted fw-bold mb-1"><?php echo $lang['year']; ?></label>
+                <select name="year" class="form-select border-0 bg-light fw-bold" onchange="this.form.submit()">
+                    <?php
+                    $currentYear = date('Y');
+                    for ($y = $currentYear; $y >= $currentYear - 5; $y--) {
+                        $sel = ($y == $selected_year) ? 'selected' : '';
+                        echo "<option value='$y' $sel>$y</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary fw-bold px-4" style="background: var(--primary-gradient);">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Insight Alert -->
@@ -223,13 +292,13 @@ for ($i = 5; $i >= 0; $i--) {
         <div class="glass-card p-4">
             <div class="row text-center">
                 <div class="col-6 border-end">
-                    <p class="text-muted small fw-bold text-uppercase mb-1">Total Spent</p>
+                    <p class="text-muted small fw-bold text-uppercase mb-1"><?php echo $lang['total_spent']; ?></p>
                     <h3 class="fw-bold text-dark mb-0">
                         <?php echo $currency_symbol . number_format($total_expense, 0); ?>
                     </h3>
                 </div>
                 <div class="col-6">
-                    <p class="text-muted small fw-bold text-uppercase mb-1">Total Income</p>
+                    <p class="text-muted small fw-bold text-uppercase mb-1"><?php echo $lang['total_income']; ?></p>
                     <h3 class="fw-bold text-success mb-0">
                         <?php echo $currency_symbol . number_format($total_income, 0); ?>
                     </h3>
@@ -241,7 +310,7 @@ for ($i = 5; $i >= 0; $i--) {
     <!-- MONTHLY COMPARISON (NEW) -->
     <div class="px-3 mb-4 fade-in-up delay-3">
         <div class="glass-card p-4">
-            <h5 class="fw-bold mb-3">Monthly Comparison</h5>
+            <h5 class="fw-bold mb-3"><?php echo $lang['monthly_comparison']; ?></h5>
             <div class="chart-box" style="height: 250px;">
                 <canvas id="barChart"></canvas>
             </div>
@@ -251,7 +320,7 @@ for ($i = 5; $i >= 0; $i--) {
     <!-- PIE CHART (Expense Breakdown) -->
     <div class="px-3 mb-4 fade-in-up delay-3">
         <div class="glass-card p-4">
-            <h5 class="fw-bold mb-3">Expense Breakdown</h5>
+            <h5 class="fw-bold mb-3"><?php echo $lang['expense_breakdown']; ?></h5>
 
             <div class="chart-box">
                 <canvas id="pieChart"></canvas>
@@ -279,7 +348,60 @@ for ($i = 5; $i >= 0; $i--) {
                 </div>
             <?php else: ?>
                 <div class="text-center mt-3 text-muted small">
-                    <p>Start adding expenses to populate the chart.</p>
+                    <p><?php echo $lang['start_adding_expenses']; ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- DETAILED BREAKDOWN TABLE -->
+    <div class="px-3 mb-4 fade-in-up delay-3">
+        <div class="glass-card p-4">
+            <h5 class="fw-bold mb-3"><?php echo $lang['category_details']; ?></h5>
+            <?php if (!empty($cat_data)): ?>
+                <div class="d-flex flex-column gap-3">
+                    <?php foreach ($cat_data as $i => $row):
+                        $pct = ($total_expense > 0) ? ($row['total'] / $total_expense) * 100 : 0;
+                        $color = $cat_colors[$i % count($cat_colors)];
+                        ?>
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded-4 bg-light bg-opacity-50">
+
+                            <!-- Left: Icon & Name -->
+                            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm"
+                                    style="width: 38px; height: 38px; background-color: white; color: <?php echo $color; ?>;">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark mb-1 text-wrap" style="font-size: 0.8rem; line-height: 1.1;">
+                                        <?php echo htmlspecialchars($row['category']); ?>
+                                    </div>
+                                    <div class="progress" style="height: 4px; width: 60px; background-color: rgba(0,0,0,0.05);">
+                                        <div class="progress-bar rounded-pill"
+                                            style="width: <?php echo $pct; ?>%; background-color: <?php echo $color; ?>;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Amount & % -->
+                            <div class="text-end ps-2">
+                                <div class="fw-bold text-dark mb-0" style="font-size: 0.85rem;">
+                                    <?php echo $currency_symbol . number_format($row['total']); ?>
+                                </div>
+                                <small class="text-muted fw-bold"
+                                    style="font-size: 0.7rem;"><?php echo number_format($pct, 1); ?>%</small>
+                            </div>
+
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="text-center py-5">
+                    <div class="mb-3 text-muted opacity-25">
+                        <i class="fas fa-receipt fa-3x"></i>
+                    </div>
+                    <h6 class="fw-bold text-muted"><?php echo $lang['no_expenses_found']; ?></h6>
+                    <p class="small text-muted mb-0"><?php echo $lang['try_changing_date']; ?></p>
                 </div>
             <?php endif; ?>
         </div>
@@ -288,7 +410,9 @@ for ($i = 5; $i >= 0; $i--) {
     <!-- LINE CHART (Trend) -->
     <div class="px-3 mb-4 fade-in-up delay-4">
         <div class="glass-card p-4">
-            <h5 class="fw-bold mb-3">Daily Spending Flow</h5>
+            <h5 class="fw-bold mb-3">
+                <?php echo ($report_type === 'yearly') ? $lang['monthly_trends'] : $lang['daily_spending_flow']; ?>
+            </h5>
             <div class="chart-box">
                 <canvas id="lineChart"></canvas>
             </div>
@@ -307,8 +431,8 @@ for ($i = 5; $i >= 0; $i--) {
     const catValues = <?php echo json_encode($cat_values); ?>;
     const catColors = <?php echo json_encode($cat_colors); ?>;
 
-    const dailyLabels = <?php echo json_encode($daily_labels); ?>;
-    const dailyValues = <?php echo json_encode($daily_values); ?>;
+    const dailyLabels = <?php echo json_encode($trend_labels); ?>;
+    const dailyValues = <?php echo json_encode($trend_values); ?>;
 
     const compLabels = <?php echo json_encode($comp_labels); ?>;
     const compValues = <?php echo json_encode($comp_values); ?>;
@@ -435,7 +559,7 @@ for ($i = 5; $i >= 0; $i--) {
                             return label;
                         },
                         title: function (context) {
-                            return 'Day ' + context[0].label;
+                            return '<?php echo ($report_type === 'yearly') ? 'Month ' : 'Day '; ?>' + context[0].label;
                         }
                     }
                 }
